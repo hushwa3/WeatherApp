@@ -2,10 +2,10 @@
   <ion-toolbar>
     <ion-title>Weather Forecast</ion-title>
     <ion-buttons slot="end">
-      <ion-button routerLink="/settings">
+      <ion-button (click)="goToSettings()">
         <ion-icon name="settings-outline"></ion-icon>
       </ion-button>
-      <ion-button routerLink="/location">
+      <ion-button (click)="goToLocation()">
         <ion-icon name="location-outline"></ion-icon>
       </ion-button>
     </ion-buttons>

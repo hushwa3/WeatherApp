@@ -4,10 +4,11 @@ import { WeatherService } from '../services/weather.service';
 import { SettingsService } from '../services/settings.service';
 import { Network } from '@capacitor/network';
 import { forkJoin, Subject } from 'rxjs';
-import { catchError, switchMap, distinctUntilChanged, debounceTime, takeUntil } from 'rxjs/operators';
+import { catchError, takeUntil } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-home',
@@ -19,7 +20,7 @@ import { IonicModule } from '@ionic/angular';
 export class HomePage implements OnInit, OnDestroy {
   currentWeather: any = null;
   forecast: any = null;
-  isLoading = true;
+  isLoading = false;
   isOnline = true;
   errorMessage = '';
 
@@ -28,15 +29,23 @@ export class HomePage implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
+    private router: Router,
     private locationService: LocationService,
     private weatherService: WeatherService,
     private settingsService: SettingsService
   ) {}
 
+  goToSettings() {
+    this.router.navigate(['/settings']);
+  }
+  
+  goToLocation() {
+    this.router.navigate(['/location']);
+  }
+
   ngOnInit() {
     this.checkNetworkStatus();
-    this.subscribeToUpdates();
-    this.loadWeatherData();
+    this.loadWeatherData(); // ✅ Fetch once on page load
   }
 
   async checkNetworkStatus() {
@@ -45,21 +54,7 @@ export class HomePage implements OnInit, OnDestroy {
 
     Network.addListener('networkStatusChange', (status) => {
       this.isOnline = status.connected;
-      if (this.isOnline) {
-        this.loadWeatherData();
-      }
     });
-  }
-
-  subscribeToUpdates() {
-    // 🔄 Reactively update data when location or settings change
-    this.locationService.currentLocation$
-      .pipe(distinctUntilChanged(), debounceTime(500), takeUntil(this.destroy$))
-      .subscribe(() => this.loadWeatherData());
-
-    this.settingsService.settings$
-      .pipe(distinctUntilChanged(), debounceTime(500), takeUntil(this.destroy$))
-      .subscribe(() => this.loadWeatherData());
   }
 
   async loadWeatherData() {
@@ -67,13 +62,7 @@ export class HomePage implements OnInit, OnDestroy {
     this.errorMessage = '';
 
     try {
-      let position;
-      try {
-        position = await this.locationService.getCurrentPosition();
-      } catch (error) {
-        position = await this.getCachedOrDefaultLocation();
-      }
-
+      const position = await this.getUserLocation();
       const { latitude, longitude } = position.coords;
       const units = this.settingsService.getTemperatureUnit();
 
@@ -96,13 +85,17 @@ export class HomePage implements OnInit, OnDestroy {
     }
   }
 
-  async getCachedOrDefaultLocation() {
-    const cachedLocation = await this.weatherService.getCachedWeatherData('currentLocation').toPromise();
-    if (cachedLocation) {
-      return { coords: { latitude: cachedLocation.latitude, longitude: cachedLocation.longitude } };
+  async getUserLocation() {
+    try {
+      return await this.locationService.getCurrentPosition();
+    } catch (error) {
+      const cachedLocation = await this.weatherService.getCachedWeatherData('currentLocation').toPromise();
+      if (cachedLocation) {
+        return { coords: { latitude: cachedLocation.latitude, longitude: cachedLocation.longitude } };
+      }
+      this.errorMessage = 'Using default location. Enable location services for accuracy.';
+      return { coords: { latitude: 10.287020, longitude: 123.861557 } }; // Default: Basak Pardo
     }
-    this.errorMessage = 'Using default location. Enable location services for accuracy.';
-    return { coords: { latitude: 10.2854, longitude: 123.8648 } }; // Default: Basak Pardo
   }
 
   loadCachedWeather() {
