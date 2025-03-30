@@ -1,0 +1,28 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Settings</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-list>
+    <ion-item>
+      <ion-label>Temperature Unit</ion-label>
+      <ion-select [(ngModel)]="settings.temperatureUnit" (ionChange)="updateTemperatureUnit($event)">
+        <ion-select-option value="celsius">Celsius (°C)</ion-select-option>
+        <ion-select-option value="fahrenheit">Fahrenheit (°F)</ion-select-option>
+      </ion-select>
+    </ion-item>
+    
+    <ion-item>
+      <ion-label>Theme</ion-label>
+      <ion-select [(ngModel)]="settings.theme" (ionChange)="updateTheme($event)">
+        <ion-select-option value="light">Light Mode</ion-select-option>
+        <ion-select-option value="dark">Dark Mode</ion-select-option>
+      </ion-select>
+    </ion-item>
+  </ion-list>
+</ion-content>

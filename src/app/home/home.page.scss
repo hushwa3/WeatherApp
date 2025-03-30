@@ -1,27 +1,72 @@
-#container {
-  text-align: center;
-
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+.current-weather {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  
+  .weather-icon {
+    flex: 0 0 auto;
+    
+    img {
+      width: 100px;
+      height: 100px;
+    }
+  }
+  
+  .weather-details {
+    padding-left: 16px;
+    
+    .temperature {
+      font-size: 2.5rem;
+      font-weight: bold;
+    }
+    
+    .description {
+      font-size: 1.2rem;
+      text-transform: capitalize;
+    }
+  }
 }
 
-#container strong {
-  font-size: 20px;
-  line-height: 26px;
+.scroll-container {
+  display: flex;
+  overflow-x: auto;
+  padding: 8px 0;
+  
+  .hourly-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 70px;
+    
+    .hour {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    
+    img {
+      width: 50px;
+      height: 50px;
+    }
+    
+    .temp {
+      font-size: 1rem;
+      font-weight: 500;
+    }
+  }
 }
 
-#container p {
-  font-size: 16px;
-  line-height: 22px;
-
-  color: #8c8c8c;
-
-  margin: 0;
-}
-
-#container a {
-  text-decoration: none;
+.forecast-temp-icon {
+  display: flex;
+  align-items: center;
+  
+  img {
+    width: 40px;
+    height: 40px;
+  }
+  
+  span {
+    font-size: 1.2rem;
+    font-weight: 500;
+  }
 }

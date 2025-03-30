@@ -1,0 +1,56 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Location</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-list>
+    <ion-item>
+      <ion-button expand="block" (click)="useCurrentLocation()" [disabled]="isLoading">
+        <ion-icon name="locate-outline" slot="start"></ion-icon>
+        Use Current Location
+      </ion-button>
+    </ion-item>
+    
+    <ion-item>
+      <ion-label position="stacked">Search for a location</ion-label>
+      <ion-input [(ngModel)]="searchQuery" placeholder="City name"></ion-input>
+    </ion-item>
+    
+    <ion-item>
+      <ion-button expand="block" (click)="searchLocation()" [disabled]="isLoading || !searchQuery.trim()">
+        <ion-icon name="search-outline" slot="start"></ion-icon>
+        Search
+      </ion-button>
+    </ion-item>
+  </ion-list>
+  
+  <!-- Loading indicator -->
+  <div *ngIf="isLoading" class="ion-padding ion-text-center">
+    <ion-spinner></ion-spinner>
+    <p>Loading...</p>
+  </div>
+  
+  <!-- Error message -->
+  <ion-item *ngIf="errorMessage" color="danger">
+    <ion-label>{{ errorMessage }}</ion-label>
+  </ion-item>
+  
+  <!-- Search results -->
+  <ion-list *ngIf="searchResults.length > 0">
+    <ion-list-header>
+      <ion-label>Search Results</ion-label>
+    </ion-list-header>
+    <ion-item button *ngFor="let location of searchResults" (click)="selectLocation(location)">
+      <ion-icon name="location-outline" slot="start"></ion-icon>
+      <ion-label>
+        <h2>{{ location.name }}</h2>
+        <p>{{ location.state ? location.state + ', ' : '' }}{{ location.country }}</p>
+      </ion-label>
+    </ion-item>
+  </ion-list>
+</ion-content>

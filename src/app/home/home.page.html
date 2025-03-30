@@ -1,20 +1,130 @@
-<ion-header [translucent]="true">
+<ion-header>
   <ion-toolbar>
-    <ion-title>
-      Blank
-    </ion-title>
+    <ion-title>Weather Forecast</ion-title>
+    <ion-buttons slot="end">
+      <ion-button routerLink="/settings">
+        <ion-icon name="settings-outline"></ion-icon>
+      </ion-button>
+      <ion-button routerLink="/location">
+        <ion-icon name="location-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="refreshWeather($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
 
-  <div id="container">
-    <strong>Ready to create an app?</strong>
-    <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
+  <!-- Error message -->
+  <ion-item *ngIf="errorMessage" color="danger">
+    <ion-label>{{ errorMessage }}</ion-label>
+  </ion-item>
+
+  <!-- Network status indicator -->
+  <ion-item *ngIf="!isOnline" color="warning">
+    <ion-icon name="cloud-offline-outline" slot="start"></ion-icon>
+    <ion-label>Offline Mode - Showing cached data</ion-label>
+  </ion-item>
+
+  <!-- Loading indicator -->
+  <div *ngIf="isLoading" class="ion-padding ion-text-center">
+    <ion-spinner></ion-spinner>
+    <p>Loading weather data...</p>
   </div>
+
+  <!-- Current Weather -->
+  <ion-card *ngIf="currentWeather && !isLoading">
+    <ion-card-header>
+      <ion-card-subtitle>Current Weather</ion-card-subtitle>
+      <ion-card-title>{{ currentWeather.name }}</ion-card-title>
+    </ion-card-header>
+
+    <ion-card-content>
+      <div class="current-weather">
+        <div class="weather-icon">
+          <img *ngIf="currentWeather.weather && currentWeather.weather[0]" 
+               src="/WeatherApp/images/cloudy.png"
+               alt="{{ currentWeather.weather[0].description }}">
+        </div>
+        <div class="weather-details">
+          <div class="temperature">{{ currentWeather.main.temp | number:'1.0-0' }}{{ getTemperatureSymbol() }}</div>
+          <div class="description">{{ currentWeather.weather[0].description }}</div>
+        </div>
+      </div>
+      
+      <ion-grid>
+        <ion-row>
+          <ion-col size="6">
+            <ion-item lines="none">
+              <ion-icon name="water-outline" slot="start"></ion-icon>
+              <ion-label>Humidity: {{ currentWeather.main.humidity }}%</ion-label>
+            </ion-item>
+          </ion-col>
+          <ion-col size="6">
+            <ion-item lines="none">
+              <ion-icon name="speedometer-outline" slot="start"></ion-icon>
+              <ion-label>Pressure: {{ currentWeather.main.pressure }} hPa</ion-label>
+            </ion-item>
+          </ion-col>
+        </ion-row>
+        <ion-row>
+          <ion-col size="6">
+            <ion-item lines="none">
+              <ion-icon name="navigate-outline" slot="start"></ion-icon>
+              <ion-label>Wind: {{ currentWeather.wind.speed }} m/s</ion-label>
+            </ion-item>
+          </ion-col>
+          <ion-col size="6">
+            <ion-item lines="none">
+              <ion-icon name="eye-outline" slot="start"></ion-icon>
+              <ion-label>Visibility: {{ currentWeather.visibility / 1000 | number:'1.0-1' }} km</ion-label>
+            </ion-item>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Hourly Forecast -->
+  <ion-card *ngIf="hourlyForecast.length > 0 && !isLoading">
+    <ion-card-header>
+      <ion-card-subtitle>Today's Hourly Forecast</ion-card-subtitle>
+    </ion-card-header>
+    
+    <ion-card-content>
+      <div class="scroll-container">
+        <div class="hourly-item" *ngFor="let item of hourlyForecast">
+          <div class="hour">{{ item.dt * 1000 | date:'HH:mm' }}</div>
+          <img src="/WeatherApp/images/cloudy.png" 
+               alt="{{ item.weather[0].description }}">
+          <div class="temp">{{ item.main.temp | number:'1.0-0' }}{{ getTemperatureSymbol() }}</div>
+        </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- 5-Day Forecast -->
+  <ion-card *ngIf="dailyForecast.length > 0 && !isLoading">
+    <ion-card-header>
+      <ion-card-subtitle>5-Day Forecast</ion-card-subtitle>
+    </ion-card-header>
+    
+    <ion-card-content>
+      <ion-list>
+        <ion-item *ngFor="let day of dailyForecast">
+          <ion-label>
+            <h2>{{ day.dt * 1000 | date:'EEEE, MMM d' }}</h2>
+            <p>{{ day.weather[0].description }}</p>
+          </ion-label>
+          <div slot="end" class="forecast-temp-icon">
+            <img src="/WeatherApp/images/cloudy.png" 
+                 alt="{{ day.weather[0].description }}">
+            <span>{{ day.main.temp | number:'1.0-0' }}{{ getTemperatureSymbol() }}</span>
+          </div>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
 </ion-content>
