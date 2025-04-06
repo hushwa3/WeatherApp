@@ -45,8 +45,8 @@
       <div class="current-weather">
         <div class="weather-icon">
           <img *ngIf="currentWeather.weather && currentWeather.weather[0]" 
-               src="/WeatherApp/images/cloudy.png"
-               alt="{{ currentWeather.weather[0].description }}">
+          [src]="getWeatherIcon(currentWeather.weather[0].description, currentWeatherTimeHour)" 
+          alt="{{ currentWeather.weather[0].description }}">
         </div>
         <div class="weather-details">
           <div class="temperature">{{ currentWeather.main.temp | number:'1.0-0' }}{{ getTemperatureSymbol() }}</div>
@@ -97,8 +97,8 @@
       <div class="scroll-container">
         <div class="hourly-item" *ngFor="let item of hourlyForecast">
           <div class="hour">{{ item.dt * 1000 | date:'HH:mm' }}</div>
-          <img src="/WeatherApp/images/cloudy.png" 
-               alt="{{ item.weather[0].description }}">
+          <img [src]="getWeatherIcon(item.weather[0].description, item.hour)" 
+     alt="{{ item.weather[0].description }}">
           <div class="temp">{{ item.main.temp | number:'1.0-0' }}{{ getTemperatureSymbol() }}</div>
         </div>
       </div>
@@ -119,8 +119,9 @@
             <p>{{ day.weather[0].description }}</p>
           </ion-label>
           <div slot="end" class="forecast-temp-icon">
-            <img src="/WeatherApp/images/cloudy.png" 
-                 alt="{{ day.weather[0].description }}">
+            <img [src]="getWeatherIcon(day.weather[0].description, day.hour)" 
+     alt="{{ day.weather[0].description }}">
+
             <span>{{ day.main.temp | number:'1.0-0' }}{{ getTemperatureSymbol() }}</span>
           </div>
         </ion-item>

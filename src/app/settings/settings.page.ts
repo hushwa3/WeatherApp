@@ -13,6 +13,7 @@ import { IonicModule } from '@ionic/angular';
 })
 export class SettingsPage implements OnInit {
   settings: AppSettings;
+  isDarkMode: boolean = false;
 
   constructor(private settingsService: SettingsService) {
     this.settings = {
@@ -24,6 +25,8 @@ export class SettingsPage implements OnInit {
   ngOnInit() {
     this.settingsService.settings$.subscribe(settings => {
       this.settings = settings;
+      this.isDarkMode = settings.theme === 'dark';
+      document.body.classList.toggle('dark', this.isDarkMode); 
     });
   }
 
@@ -33,9 +36,8 @@ export class SettingsPage implements OnInit {
     });
   }
 
-  updateTheme(event: any) {
-    this.settingsService.updateSettings({
-      theme: event.detail.value
-    });
+  toggleTheme() {
+    const theme = this.isDarkMode ? 'dark' : 'light';
+    this.settingsService.updateSettings({ theme });
   }
 }

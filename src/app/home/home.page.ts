@@ -4,11 +4,12 @@ import { WeatherService } from '../services/weather.service';
 import { SettingsService } from '../services/settings.service';
 import { Network } from '@capacitor/network';
 import { forkJoin, Subject } from 'rxjs';
-import { catchError, takeUntil } from 'rxjs/operators';
+import { catchError, takeUntil, filter } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
-import { Router } from '@angular/router';
+import { Router, NavigationEnd } from '@angular/router';
+
 
 @Component({
   selector: 'app-home',
@@ -19,6 +20,7 @@ import { Router } from '@angular/router';
 })
 export class HomePage implements OnInit, OnDestroy {
   currentWeather: any = null;
+  currentWeatherTimeHour: number = 0;
   forecast: any = null;
   isLoading = false;
   isOnline = true;
@@ -45,7 +47,19 @@ export class HomePage implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.checkNetworkStatus();
-    this.loadWeatherData(); // ✅ Fetch once on page load
+
+    this.router.events
+    .pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      takeUntil(this.destroy$)
+    )
+    .subscribe((event: NavigationEnd) => {
+      if (event.url === '/home') {
+        this.loadWeatherData();
+      }
+    });
+
+    this.loadWeatherData();
   }
 
   async checkNetworkStatus() {
@@ -116,25 +130,36 @@ export class HomePage implements OnInit, OnDestroy {
     if (data.forecast) {
       this.forecast = data.forecast;
       this.extractHourlyAndDailyForecast();
+
     }
   }
 
   extractHourlyAndDailyForecast() {
     const today = new Date().setHours(0, 0, 0, 0);
 
+    // Hourly Forecast: Only today, with hour added
     this.hourlyForecast = this.forecast.list
       .filter((item: any) => new Date(item.dt * 1000).setHours(0, 0, 0, 0) === today)
-      .slice(0, 24);
-
+      .slice(0, 24)
+      .map((item: any) => ({
+        ...item,
+        hour: new Date(item.dt * 1000).getHours() // Add hour property
+      }));
+  
+    // Daily Forecast: One item per day, preferring data at 12:00 PM
     const dailyMap = new Map();
     this.forecast.list.forEach((item: any) => {
       const date = new Date(item.dt * 1000).setHours(0, 0, 0, 0);
-      if (!dailyMap.has(date) || new Date(item.dt * 1000).getHours() === 12) {
-        dailyMap.set(date, item);
+      const hour = new Date(item.dt * 1000).getHours();
+      if (!dailyMap.has(date) || hour === 12) {
+        dailyMap.set(date, {
+          ...item,
+          hour // Add hour property here too
+        });
       }
     });
-
-    this.dailyForecast = Array.from(dailyMap.values()).slice(0, 5);
+  
+    this.dailyForecast = Array.from(dailyMap.values()).slice(0, 5)
   }
 
   refreshWeather(event: any) {
@@ -152,4 +177,47 @@ export class HomePage implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
   }
+
+  getWeatherIcon(condition: string, hour: number): string {
+    let iconCode = '01';
+    const isDayTime = hour >= 6 && hour < 18;
+  
+    switch (condition.toLowerCase()) {
+      case 'clear':
+        iconCode = isDayTime ? '01d' : '01n';
+        break;
+      case 'few clouds':
+        iconCode = isDayTime ? '02d' : '02n';
+        break;
+      case 'scattered clouds':
+        iconCode = isDayTime ? '03d' : '03n';
+        break;
+      case 'broken clouds':
+      case 'overcast clouds':
+        iconCode = isDayTime ? '04d' : '04n';
+        break;
+      case 'shower rain':
+      case 'light rain':
+        iconCode = isDayTime ? '09d' : '09n';
+        break;
+      case 'rain':
+        iconCode = isDayTime ? '10d' : '10n';
+        break;
+      case 'thunderstorm':
+        iconCode = isDayTime ? '11d' : '11n';
+        break;
+      case 'snow':
+        iconCode = isDayTime ? '13d' : '13n';
+        break;
+      case 'mist':
+      case 'fog':
+        iconCode = isDayTime ? '50d' : '50n';
+        break;
+      default:
+        iconCode = isDayTime ? '01d' : '01n';
+    }
+  
+    return `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+  }
+
 }
