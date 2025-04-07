@@ -6,10 +6,52 @@ import { BehaviorSubject } from 'rxjs';
   providedIn: 'root'
 })
 export class LocationService {
+  // Selected location management
+  private selectedLocationSubject = new BehaviorSubject<{ latitude: number; longitude: number; city?: string } | null>(null);
+  public selectedLocation$ = this.selectedLocationSubject.asObservable();
+  private readonly LOCATION_STORAGE_KEY = 'selectedLocation';
+
+  // Current location management
   private currentLocationSubject = new BehaviorSubject<{ latitude: number, longitude: number } | null>(null);
   currentLocation$ = this.currentLocationSubject.asObservable();
 
-  constructor() {}
+  constructor() {
+    // Load saved location on service initialization
+    this.loadSavedLocation();
+  }
+
+  // Save the location to storage and update the subject
+  setSelectedLocation(location: { latitude: number; longitude: number; city?: string }) {
+    // Store in local storage
+    localStorage.setItem(this.LOCATION_STORAGE_KEY, JSON.stringify(location));
+    // Update the BehaviorSubject
+    this.selectedLocationSubject.next(location);
+  }
+
+  // Clear the selected location from storage and the subject
+  clearSelectedLocation() {
+    localStorage.removeItem(this.LOCATION_STORAGE_KEY);
+    this.selectedLocationSubject.next(null);
+  }
+
+  // Get the current selected location value synchronously
+  getSelectedLocation(): { latitude: number; longitude: number; city?: string } | null {
+    return this.selectedLocationSubject.getValue();
+  }
+
+  // Load the saved location from storage
+  private loadSavedLocation() {
+    const savedLocation = localStorage.getItem(this.LOCATION_STORAGE_KEY);
+    if (savedLocation) {
+      try {
+        const location = JSON.parse(savedLocation);
+        this.selectedLocationSubject.next(location);
+      } catch (e) {
+        console.error('Error parsing saved location', e);
+        localStorage.removeItem(this.LOCATION_STORAGE_KEY);
+      }
+    }
+  }
 
   /**
    * Requests the user's current position with high accuracy.

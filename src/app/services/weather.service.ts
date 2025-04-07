@@ -8,7 +8,7 @@ import { map, switchMap, tap } from 'rxjs/operators';
   providedIn: 'root'
 })
 export class WeatherService {
-  private apiKey = '1dbc9831dae05630db1a55585ba4d359';
+  private apiKey = 'API_KEY HERE';
   private baseUrl = 'https://api.openweathermap.org/data/2.5';
 
   constructor(private http: HttpClient) {}
@@ -47,5 +47,12 @@ export class WeatherService {
         return null;
       })
     );
+  }
+
+  async cacheData(key: string, data: any): Promise<void> {
+    await Preferences.set({
+      key,
+      value: JSON.stringify(data)
+    });
   }
 }

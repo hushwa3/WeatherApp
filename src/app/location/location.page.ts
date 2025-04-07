@@ -52,8 +52,8 @@ export class LocationPage implements OnInit {
     this.errorMessage = '';
     
     // Using OpenWeatherMap Geocoding API
-    const apiKey = '1dbc9831dae05630db1a55585ba4d359';
-    const url = `https://api.openweathermap.org/geo/1.0/direct?q=${this.searchQuery}&limit=5&appid=${apiKey}`;
+    const apiKey = API_KEY HERE';
+    const url = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(this.searchQuery)}&limit=5&appid=${apiKey}`;
     
     this.http.get<any[]>(url).subscribe(
       (results) => {
@@ -71,8 +71,50 @@ export class LocationPage implements OnInit {
     );
   }
 
+  /**selectLocation(location: any) {
+   // this.locationService.setManualLocation(location.lat, location.lon);
+    //this.navCtrl.navigateBack('/home');
+  } **/
+
+ /** selectLocation(location: any) {
+  const selectedLat = location.lat;
+  const selectedLng = location.lon;
+  const selectedCity = location.name || location.city || location.label || 'Selected Location';
+
+  this.locationService.setSelectedLocation({
+    latitude: selectedLat,
+    longitude: selectedLng,
+    city: selectedCity
+  });
+
+  this.navCtrl.navigateBack('/home');
+ } **/
+
   selectLocation(location: any) {
-    this.locationService.setManualLocation(location.lat, location.lon);
+    // Create a properly formatted location name that includes all available details
+    let locationName = location.name;
+    
+    // Add state/province if available and different from city name
+    if (location.state && location.state !== location.name) {
+      locationName += `, ${location.state}`;
+    }
+    
+    // Add country if available
+    if (location.country) {
+      locationName += `, ${location.country}`;
+    }
+    
+    const selectedLocation = {
+      latitude: location.lat,
+      longitude: location.lon,
+      city: locationName // Use the formatted location name
+    };
+    
+    // Set the selected location in the service
+    this.locationService.setSelectedLocation(selectedLocation);
+    
+    // Navigate back to the home page
     this.navCtrl.navigateBack('/home');
   }
+ 
 }

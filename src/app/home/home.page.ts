@@ -3,7 +3,7 @@ import { LocationService } from '../services/location.service';
 import { WeatherService } from '../services/weather.service';
 import { SettingsService } from '../services/settings.service';
 import { Network } from '@capacitor/network';
-import { forkJoin, Subject } from 'rxjs';
+import { forkJoin, Subject, Subscription } from 'rxjs';
 import { catchError, takeUntil, filter } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -26,6 +26,9 @@ export class HomePage implements OnInit, OnDestroy {
   isOnline = true;
   errorMessage = '';
 
+  //1st
+  private  locationSubscription: Subscription | null = null;
+
   hourlyForecast: any[] = [];
   dailyForecast: any[] = [];
   private destroy$ = new Subject<void>();
@@ -34,7 +37,7 @@ export class HomePage implements OnInit, OnDestroy {
     private router: Router,
     private locationService: LocationService,
     private weatherService: WeatherService,
-    private settingsService: SettingsService
+    private settingsService: SettingsService,
   ) {}
 
   goToSettings() {
@@ -47,20 +50,80 @@ export class HomePage implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.checkNetworkStatus();
-
-    this.router.events
-    .pipe(
-      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-      takeUntil(this.destroy$)
-    )
-    .subscribe((event: NavigationEnd) => {
-      if (event.url === '/home') {
-        this.loadWeatherData();
+  
+    // First check if there's a selected location
+    const selectedLocation = this.locationService.getSelectedLocation();
+    if (selectedLocation) {
+      // Use the selected location immediately
+      this.fetchWeatherData(selectedLocation.latitude, selectedLocation.longitude, selectedLocation.city);
+    } else {
+      // Only if no selected location, load from GPS
+      this.loadWeatherData();
+    }
+  
+    // Subscribe to location changes for future updates
+    this.locationSubscription = this.locationService.selectedLocation$.subscribe((location) => {
+      if (location) {
+        this.fetchWeatherData(location.latitude, location.longitude, location.city);
       }
     });
-
-    this.loadWeatherData();
+  
+    // Subscribe to router events to refresh data when returning to the page
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntil(this.destroy$)
+      )
+      .subscribe((event: NavigationEnd) => {
+        if (event.url === '/home') {
+          // Check for selected location again when returning to home
+          const currentLocation = this.locationService.getSelectedLocation();
+          if (currentLocation) {
+            this.fetchWeatherData(currentLocation.latitude, currentLocation.longitude, currentLocation.city);
+          } else {
+            this.loadWeatherData();
+          }
+        }
+      });
   }
+
+  // 3rd
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+    if (this.locationSubscription) {
+      this.locationSubscription.unsubscribe();
+    }
+  }
+//
+
+//
+async fetchWeatherData(latitude: number, longitude: number, cityName?: string) {
+  this.isLoading = true;
+  this.errorMessage = '';
+  const units = this.settingsService.getTemperatureUnit();
+
+  try {
+    this.weatherService.cacheData('currentLocation', { latitude, longitude, city: cityName });
+    if (this.isOnline) {
+      forkJoin({
+        current: this.weatherService.getCurrentWeather(latitude, longitude, units).pipe(
+          catchError(() => this.weatherService.getCachedWeatherData('currentWeather'))
+        ),
+        forecast: this.weatherService.getForecast(latitude, longitude, units).pipe(
+          catchError(() => this.weatherService.getCachedWeatherData('forecast'))
+        ),
+      }).subscribe((data) => this.processWeatherData(data));
+    } else {
+      this.loadCachedWeather();
+    }
+  } catch (error) {
+    this.errorMessage = 'An error occurred while fetching data. Please try again.';
+  } finally {
+    this.isLoading = false;
+  }
+}
+//
 
   async checkNetworkStatus() {
     const status = await Network.getStatus();
@@ -140,7 +203,7 @@ export class HomePage implements OnInit, OnDestroy {
     // Hourly Forecast: Only today, with hour added
     this.hourlyForecast = this.forecast.list
       .filter((item: any) => new Date(item.dt * 1000).setHours(0, 0, 0, 0) === today)
-      .slice(0, 24)
+      .slice(0, 24) //add floor to make it actually 24H
       .map((item: any) => ({
         ...item,
         hour: new Date(item.dt * 1000).getHours() // Add hour property
@@ -173,10 +236,11 @@ export class HomePage implements OnInit, OnDestroy {
     return this.settingsService.getTemperatureUnit() === 'metric' ? '°C' : '°F';
   }
 
+  /** 
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
-  }
+  } */
 
   getWeatherIcon(condition: string, hour: number): string {
     let iconCode = '01';
