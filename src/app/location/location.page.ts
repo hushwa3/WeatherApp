@@ -52,7 +52,7 @@ export class LocationPage implements OnInit {
     this.errorMessage = '';
     
     // Using OpenWeatherMap Geocoding API
-    const apiKey = API_KEY HERE';
+    const apiKey = 'API_KEY';
     const url = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(this.searchQuery)}&limit=5&appid=${apiKey}`;
     
     this.http.get<any[]>(url).subscribe(

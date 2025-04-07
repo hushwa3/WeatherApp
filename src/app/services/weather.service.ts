@@ -8,7 +8,7 @@ import { map, switchMap, tap } from 'rxjs/operators';
   providedIn: 'root'
 })
 export class WeatherService {
-  private apiKey = 'API_KEY HERE';
+  private apiKey = 'API_KEY';
   private baseUrl = 'https://api.openweathermap.org/data/2.5';
 
   constructor(private http: HttpClient) {}
